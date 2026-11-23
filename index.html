@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Lumen — Endless Firefly Shooter</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Active Gameplay HUD Overlay -->
+  <div id="hudLayer" class="fixed inset-0 pointer-events-none p-3 sm:p-5 flex flex-col justify-between z-10">
+    <div class="flex items-start justify-between gap-2 w-full">
+
+      <!-- Top-Left: Dusk Stage, Lives, Dusk Gauge & Pulse -->
+      <div class="flex flex-col items-start min-w-[145px] sm:min-w-[215px]">
+        <h2 id="hudDuskTitle" class="font-cinzel text-sm sm:text-lg font-bold tracking-[0.14em] text-[#fff5bd] glow-gold">
+          DUSK I
+        </h2>
+        <p id="hudDuskSub" class="text-[9px] sm:text-[10px] font-semibold tracking-[0.2em] uppercase text-[#7ef9ff]/75 -mt-0.5">
+          THE WHISPERING GLADE
+        </p>
+
+        <div id="hudLives" class="flex items-center gap-1 sm:gap-1.5 mt-1.5" aria-label="Health Hearts"></div>
+
+        <div class="relative w-32 sm:w-44 h-2 rounded-full bg-[#06151d]/90 border border-[#7ef9ff]/25 overflow-hidden mt-2 shadow-inner">
+          <div id="hudProgressFill" class="h-full rounded-full transition-all duration-200"
+               style="width: 0%; background: linear-gradient(90deg, #69f0ae 0%, #ffd24a 100%); box-shadow: 0 0 10px rgba(255, 210, 74, 0.6);"></div>
+          <div class="absolute inset-0 dusk-segments pointer-events-none"></div>
+        </div>
+
+        <div class="flex items-center gap-2.5 mt-1.5">
+          <span id="hudWeaponTier" class="text-[10px] sm:text-[11px] font-bold tracking-[0.22em] uppercase text-[#ffd24a] glow-gold">
+            EMBER
+          </span>
+          <span id="hudShieldBadge" class="hidden text-[9px] font-semibold tracking-[0.16em] uppercase px-1.5 py-0.5 rounded-full bg-[#69f0ae]/15 border border-[#69f0ae]/50 text-[#69f0ae]">
+            AEGIS
+          </span>
+        </div>
+
+        <div class="flex items-center gap-1.5 mt-1">
+          <span class="text-[9px] tracking-[0.16em] uppercase text-[#7ef9ff]/70">PULSE</span>
+          <div class="w-20 sm:w-24 h-1 rounded-full bg-[#06151d]/90 border border-[#7ef9ff]/20 overflow-hidden">
+            <div id="hudDashFill" class="h-full rounded-full bg-[#7ef9ff] transition-all duration-75"
+                 style="width: 100%; box-shadow: 0 0 8px rgba(126, 249, 255, 0.75);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top-Center: Score, Lumens & Boss Bar -->
+      <div class="flex flex-col items-center text-center flex-1 max-w-md mx-auto">
+        <div id="hudScore" class="font-cinzel text-2xl sm:text-4xl font-bold tracking-[0.06em] text-[#fff9db] glow-gold tabular-nums leading-none">
+          0
+        </div>
+        <div class="flex items-center gap-2 mt-1 text-[10px] sm:text-xs font-medium tracking-[0.14em] text-[#b9f6ca]/85 tabular-nums">
+          <span class="inline-flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#ffd24a] shadow-[0_0_6px_#ffd24a]"></span>
+            <span id="hudMotes">0</span>
+          </span>
+          <span id="hudComboWrap" class="hidden text-[#7ef9ff] font-semibold">
+            • <span id="hudCombo">x1.0</span>
+          </span>
+        </div>
+
+        <div id="bossBarContainer" class="w-full max-w-[270px] sm:max-w-[390px] mt-3 flex flex-col items-center">
+          <div class="w-full flex items-center justify-between gap-2 mb-1 px-0.5">
+            <span id="bossBarName" class="text-[9px] sm:text-[11px] font-bold tracking-[0.22em] uppercase text-[#ff80bf] glow-magenta">
+              LUNA MOTH
+            </span>
+            <span id="bossPhaseTag" class="text-[8px] sm:text-[9px] font-bold tracking-[0.16em] uppercase px-1.5 py-0.5 rounded-full bg-[#ff4fa3]/15 border border-[#ff4fa3]/45 text-[#ffd6ec]">
+              PHASE I • WALTZ
+            </span>
+          </div>
+          <div class="relative w-full h-2.5 sm:h-3 rounded-full bg-[#120718]/90 border border-[#ff4fa3]/50 p-[1px] shadow-[0_0_20px_rgba(255,79,163,0.4)] overflow-hidden">
+            <div id="bossBarFill" class="h-full rounded-full transition-all duration-75"
+                 style="width: 100%; background: linear-gradient(90deg, #9b30ff 0%, #d500f9 45%, #ff4fa3 100%); box-shadow: 0 0 12px #ff4fa3;"></div>
+            <div class="absolute top-0 bottom-0 left-[30%] w-[1.5px] bg-[#fff5bd]/75 pointer-events-none"></div>
+            <div class="absolute top-0 bottom-0 left-[65%] w-[1.5px] bg-[#fff5bd]/75 pointer-events-none"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top-Right: Quick Controls & Minimap -->
+      <div class="flex flex-col items-end gap-2">
+        <div class="flex items-center gap-1.5 pointer-events-auto">
+          <button id="btnAutoFire" type="button" title="Toggle Auto-Fire (E)"
+                  class="hud-btn active px-2.5 py-1 rounded-full text-[9px] sm:text-[10px] font-semibold tracking-[0.14em] uppercase text-[#e0f7fa] cursor-pointer whitespace-nowrap">
+            AUTO FIRE: ON
+          </button>
+          <button id="btnMute" type="button" title="Toggle Sound (M)"
+                  class="hud-btn p-1.5 rounded-full text-[#e0f7fa] cursor-pointer" aria-label="Toggle Sound">
+            <svg id="iconSoundOn" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <svg id="iconSoundOff" class="w-3.5 h-3.5 hidden text-[#ff6e7f]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+          </button>
+          <button id="btnPause" type="button" title="Pause Game (P)"
+                  class="hud-btn p-1.5 rounded-full text-[#e0f7fa] cursor-pointer" aria-label="Pause Game">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+              <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+            </svg>
+          </button>
+        </div>
+
+        <div class="relative rounded-full overflow-hidden border border-[#7ef9ff]/30 bg-[#041017]/80 shadow-[0_4px_22px_rgba(0,0,0,0.65)] backdrop-blur-sm p-0.5">
+          <canvas id="minimapCanvas" width="96" height="96" class="block w-[78px] h-[78px] sm:w-[96px] sm:h-[96px] rounded-full"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Boss Intro Banner -->
+    <div id="bossBanner" class="my-auto flex flex-col items-center text-center px-4">
+      <div id="bossBannerEyebrow" class="text-[10px] sm:text-xs font-semibold tracking-[0.34em] uppercase text-[#ff80bf]/90 mb-1">
+        DUSK I GUARDIAN
+      </div>
+      <h1 id="bossBannerTitle" class="font-cinzel text-3xl sm:text-5xl md:text-6xl font-bold tracking-[0.06em] text-[#f8e6ff] glow-magenta">
+        Luna Moth
+      </h1>
+      <p id="bossBannerSub" class="text-xs sm:text-sm italic tracking-[0.14em] text-[#d8b4fe]/80 mt-1.5">
+        Pale Empress of the Whispering Glade
+      </p>
+    </div>
+
+    <!-- Bottom Touch Controls -->
+    <div id="touchControls" class="hidden sm:hidden flex items-end justify-between w-full pb-2 pointer-events-none">
+      <div id="touchStickZone" class="w-28 h-28 rounded-full border border-[#7ef9ff]/20 bg-[#071a24]/35 backdrop-blur-[2px] relative pointer-events-auto flex items-center justify-center">
+        <div id="touchStickKnob" class="w-10 h-10 rounded-full bg-[#ffd24a]/35 border border-[#fff5bd]/70 shadow-[0_0_14px_rgba(255,210,74,0.4)]"></div>
+      </div>
+      <button id="touchDashBtn" type="button"
+              class="w-16 h-16 rounded-full border border-[#7ef9ff]/55 bg-[#0a2533]/65 text-[10px] font-bold tracking-[0.16em] uppercase text-[#7ef9ff] shadow-[0_0_18px_rgba(126,249,255,0.3)] active:scale-95 pointer-events-auto">
+        PULSE
+      </button>
+    </div>
+  </div>
+
+  <!-- Top-Level Left HUD Dock: Inventory & 6-Box Puzzle -->
+  <div id="hudLeftDock" class="hidden fixed left-3 sm:left-5 top-1/2 -translate-y-1/2 flex-col gap-3.5 pointer-events-auto z-30">
+    <button id="btnInventory" type="button" title="Treasure Inventory (I)"
+            class="hud-btn relative w-12 h-12 rounded-2xl flex items-center justify-center text-[#7ef9ff] cursor-pointer shadow-[0_4px_18px_rgba(0,0,0,0.65)]">
+      <svg class="w-6 h-6 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 6V5a3 3 0 0 1 6 0v1"></path>
+        <rect x="5" y="6" width="14" height="15" rx="4"></rect>
+        <path d="M8 13h8v5H8z"></path>
+        <path d="M12 13v2"></path>
+      </svg>
+      <span id="badgeInventory" class="hidden pointer-events-none absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ffd24a] text-[#051017] text-[10px] font-bold flex items-center justify-center shadow-[0_0_10px_#ffd24a]">
+        0
+      </span>
+    </button>
+
+    <button id="btnPuzzle" type="button" title="6-Box Treasure Puzzle (O)"
+            class="hud-btn relative w-12 h-12 rounded-2xl flex items-center justify-center text-[#7ef9ff] cursor-pointer shadow-[0_4px_18px_rgba(0,0,0,0.65)]">
+      <svg class="w-6 h-6 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 13h-2a2 2 0 1 1 0-4h2V6a1 1 0 0 0-1-1h-3V3a2 2 0 1 0-4 0v2H8a1 1 0 0 0-1 1v3h2a2 2 0 1 1 0 4H7v4a1 1 0 0 0 1 1h3v-2a2 2 0 1 1 4 0v2h3a1 1 0 0 0 1-1v-4z"></path>
+      </svg>
+      <span id="badgePuzzle" class="hidden pointer-events-none absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#7ef9ff] text-[#051017] text-[10px] font-bold flex items-center justify-center shadow-[0_0_10px_#7ef9ff]">
+        !
+      </span>
+    </button>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="treasureToast" class="hidden fixed bottom-16 left-1/2 -translate-x-1/2 z-50 px-4 py-1.5 rounded-full bg-[#061821]/95 border border-[#ffd24a]/65 text-xs font-semibold tracking-[0.14em] text-[#ffd24a] shadow-[0_0_20px_rgba(255,210,74,0.3)] pointer-events-none whitespace-nowrap"></div>
+
+  <!-- Inventory Modal (Auto-Sorted Boss Treasures, Auto-Pauses Game) -->
+  <div id="inventoryModal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-[#030b10]/75 backdrop-blur-sm">
+    <div class="forest-panel rounded-3xl max-w-lg w-full p-6 sm:p-7 text-center flex flex-col">
+      <div class="flex items-center justify-between border-b border-[#7ef9ff]/15 pb-3">
+        <div class="text-left">
+          <div class="flex items-center gap-2">
+            <h2 class="font-cinzel text-xl sm:text-2xl font-bold tracking-[0.16em] text-[#fff8dc] glow-gold">
+              INVENTORY
+            </h2>
+            <span class="px-2 py-0.5 rounded-full bg-[#ffd24a]/15 border border-[#ffd24a]/40 text-[9px] font-bold tracking-[0.16em] uppercase text-[#ffd24a]">
+              GAME PAUSED
+            </span>
+          </div>
+          <p class="text-[10px] tracking-[0.18em] uppercase text-[#7ef9ff]/75 mt-0.5">
+            Auto-Sorted Boss Treasures
+          </p>
+        </div>
+        <button id="btnCloseInventory" type="button" class="hud-btn w-8 h-8 rounded-full text-sm text-[#e0f7fa] cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <p class="text-xs text-[#cfe8ee]/80 mt-3 mb-4">
+        Click any boss treasure chest to open it. Closing an opened treasure sends its image into your Puzzle Tray to arrange.
+      </p>
+
+      <div id="inventoryGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[52vh] overflow-y-auto pr-1"></div>
+    </div>
+  </div>
+
+  <!-- Opened Treasure Reveal Modal -->
+  <div id="chestRevealModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-[#02080c]/85 backdrop-blur-md">
+    <div class="forest-panel rounded-3xl max-w-sm w-full p-7 text-center flex flex-col items-center border border-[#ffd24a]/55 shadow-[0_0_40px_rgba(255,210,74,0.25)]">
+      <button id="btnXChestReveal" type="button" class="self-end hud-btn w-7 h-7 rounded-full text-xs text-[#e0f7fa] cursor-pointer">
+        ✕
+      </button>
+      <span id="revealTag" class="text-[10px] font-bold tracking-[0.26em] uppercase text-[#ffd24a]">
+        TREASURE OPENED
+      </span>
+      <div class="my-4 w-24 h-24 rounded-2xl bg-[#04121a]/90 border border-[#ffd24a]/40 flex items-center justify-center p-2 shadow-[0_0_24px_rgba(255,210,74,0.25)]">
+        <img id="revealRelicImg" src="" alt="Treasure Relic" class="w-20 h-20 object-contain animate-pulse-soft" />
+      </div>
+      <h3 id="revealRelicName" class="font-cinzel text-2xl font-bold tracking-[0.12em] text-[#fff8dc]">
+        Crescent Wing Crest
+      </h3>
+      <p id="revealRelicSource" class="text-[11px] font-semibold tracking-[0.14em] uppercase text-[#7ef9ff]/85 mt-1">
+        Luna Casket • Dusk I
+      </p>
+      <p id="revealRelicLore" class="text-xs italic text-[#cfe8ee]/75 mt-3 leading-relaxed">
+        A pale emerald emblem shed by the Luna Moth.
+      </p>
+      <button id="btnCloseChestReveal" type="button"
+              class="btn-lumen mt-6 w-full py-3 rounded-xl font-cinzel text-xs sm:text-sm font-bold tracking-[0.2em] uppercase text-[#fff9db] cursor-pointer">
+        CLOSE & SEND TO PUZZLE TRAY
+      </button>
+    </div>
+  </div>
+
+  <!-- 6-Box Arrangement Puzzle Modal (Auto-Pauses Game) -->
+  <div id="puzzleModal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-[#030b10]/75 backdrop-blur-sm">
+    <div class="forest-panel rounded-3xl max-w-2xl w-full p-5 sm:p-7 text-center flex flex-col max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-[#7ef9ff]/15 pb-3">
+        <div class="text-left">
+          <div class="flex items-center gap-2">
+            <h2 class="font-cinzel text-xl sm:text-2xl font-bold tracking-[0.16em] text-[#fff8dc] glow-gold">
+              TREASURE PUZZLE
+            </h2>
+            <span class="px-2 py-0.5 rounded-full bg-[#ffd24a]/15 border border-[#ffd24a]/40 text-[9px] font-bold tracking-[0.16em] uppercase text-[#ffd24a]">
+              GAME PAUSED
+            </span>
+          </div>
+          <p id="puzzleCountLabel" class="text-[10px] tracking-[0.2em] uppercase text-[#ffd24a] mt-0.5">
+            0 / 6 PLACED
+          </p>
+        </div>
+        <button id="btnClosePuzzle" type="button" class="hud-btn w-8 h-8 rounded-full text-sm text-[#e0f7fa] cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <p id="puzzleStatusBanner" class="text-xs tracking-[0.08em] text-[#cfe8ee]/85 mt-3 mb-3">
+        Arrange all 6 opened treasure images into their matching Dusk Box (Box I – Box VI). Drag or click a treasure, then click a box!
+      </p>
+
+      <!-- 6 Target Puzzle Boxes -->
+      <div id="puzzleGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+
+      <!-- Unplaced Treasures Tray -->
+      <div class="mt-4 pt-3 border-t border-[#7ef9ff]/15 text-left">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-bold tracking-[0.2em] uppercase text-[#7ef9ff]/80">
+            OPENED TREASURES TRAY (DRAG OR CLICK TO PLACE)
+          </span>
+          <button id="btnClearPuzzleBoxes" type="button" class="text-[10px] tracking-[0.14em] uppercase text-[#ff80bf] hover:underline cursor-pointer">
+            RETURN ALL TO TRAY
+          </button>
+        </div>
+        <div id="puzzleTray" class="min-h-[86px] p-2.5 rounded-2xl bg-[#041017]/80 border border-[#7ef9ff]/20 flex flex-wrap items-center justify-center gap-2.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start Title Overlay -->
+  <div id="startOverlay" class="fixed inset-0 z-20 flex items-center justify-center p-4 bg-[#030b10]/45 backdrop-blur-[2px] transition-opacity duration-500">
+    <div class="forest-panel rounded-3xl max-w-md w-full p-7 sm:p-9 text-center flex flex-col items-center">
+      <div class="w-14 h-14 rounded-full flex items-center justify-center mb-3 animate-pulse-soft"
+           style="background: radial-gradient(circle, rgba(255,245,189,0.32) 0%, rgba(255,210,74,0.08) 55%, transparent 75%);">
+        <svg class="w-9 h-9 text-[#fff5bd] drop-shadow-[0_0_12px_rgba(255,210,74,0.9)]" viewBox="0 0 36 36" fill="none">
+          <ellipse cx="12" cy="16" rx="7" ry="3.5" transform="rotate(-28 12 16)" fill="#7ef9ff" fill-opacity="0.45"/>
+          <ellipse cx="24" cy="16" rx="7" ry="3.5" transform="rotate(28 24 16)" fill="#7ef9ff" fill-opacity="0.45"/>
+          <circle cx="18" cy="13" r="2.6" fill="#fff5bd"/>
+          <ellipse cx="18" cy="21" rx="3.4" ry="5.5" fill="#ffd24a"/>
+          <circle cx="18" cy="22" r="2.2" fill="#ffffff"/>
+        </svg>
+      </div>
+
+      <h1 class="font-cinzel text-4xl sm:text-5xl font-bold tracking-[0.16em] text-[#fff8dc] glow-gold">
+        LUMEN
+      </h1>
+      <p class="text-xs sm:text-sm font-medium tracking-[0.26em] uppercase text-[#7ef9ff]/85 mt-1.5">
+        Endless Firefly Shooter
+      </p>
+
+      <div class="mt-5 px-4 py-1.5 rounded-full bg-[#041017]/80 border border-[#ffd24a]/25 text-xs tracking-[0.16em] uppercase text-[#fff5bd]/85">
+        Best Light: <span id="startHighScore" class="font-cinzel font-bold text-[#ffd24a] tabular-nums">0</span>
+      </div>
+
+      <div class="w-full mt-6 pt-5 border-t border-[#7ef9ff]/12 grid grid-cols-3 gap-2 text-[11px] text-[#cfe8ee]/85">
+        <div class="flex flex-col items-center p-2 rounded-xl bg-[#041017]/55">
+          <span class="font-semibold text-[#fff5bd] tracking-wider">WASD / ARROWS</span>
+          <span class="text-[10px] text-[#7ef9ff]/70 mt-0.5">Glide</span>
+        </div>
+        <div class="flex flex-col items-center p-2 rounded-xl bg-[#041017]/55">
+          <span class="font-semibold text-[#fff5bd] tracking-wider">MOUSE / AUTO</span>
+          <span class="text-[10px] text-[#7ef9ff]/70 mt-0.5">Aim & Fire</span>
+        </div>
+        <div class="flex flex-col items-center p-2 rounded-xl bg-[#041017]/55">
+          <span class="font-semibold text-[#fff5bd] tracking-wider">I / O KEYS</span>
+          <span class="text-[10px] text-[#7ef9ff]/70 mt-0.5">Satchel & Puzzle</span>
+        </div>
+      </div>
+
+      <button id="btnStartGame" type="button"
+              class="btn-lumen mt-7 w-full py-3.5 rounded-2xl font-cinzel text-lg font-bold tracking-[0.24em] uppercase text-[#fff9db] cursor-pointer">
+        PLAY
+      </button>;;
+    </div>
+  </div>
+
+  <!-- Pause Overlay -->
+  <div id="pauseOverlay" class="fixed inset-0 z-20 hidden items-center justify-center p-4 bg-[#030b10]/60 backdrop-blur-sm">
+    <div class="forest-panel rounded-3xl max-w-sm w-full p-7 text-center flex flex-col items-center">
+      <h2 class="font-cinzel text-3xl font-bold tracking-[0.16em] text-[#fff8dc] glow-gold">
+        STILLNESS
+      </h2>
+      <p class="text-xs tracking-[0.2em] uppercase text-[#7ef9ff]/75 mt-1">
+        The Forest Awaits
+      </p>
+      <div class="flex flex-col gap-3 w-full mt-6">
+        <button id="btnResume" type="button"
+                class="btn-lumen w-full py-3 rounded-xl font-cinzel text-sm font-bold tracking-[0.22em] uppercase text-[#fff9db] cursor-pointer">
+          RESUME (P)
+        </button>
+        <button id="btnRestartFromPause" type="button"
+                class="w-full py-2.5 rounded-xl border border-[#7ef9ff]/25 bg-[#05141c]/70 hover:bg-[#0b2533]/80 text-xs font-semibold tracking-[0.18em] uppercase text-[#b2ebf2] cursor-pointer transition">
+          RESTART JOURNEY
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Summary Overlay -->
+  <div id="gameOverOverlay" class="fixed inset-0 z-20 hidden items-center justify-center p-4 bg-[#030b10]/65 backdrop-blur-sm">
+    <div class="forest-panel rounded-3xl max-w-md w-full p-7 sm:p-9 text-center flex flex-col items-center">
+      <div class="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#ff80bf]">
+        THE LIGHT FADES
+      </div>
+      <h2 class="font-cinzel text-3xl sm:text-4xl font-bold tracking-[0.12em] text-[#fff8dc] glow-gold mt-1">
+        DUSK FALLS
+      </h2>
+
+      <div id="newRecordBadge" class="hidden mt-3 px-3 py-1 rounded-full bg-[#ffd24a]/20 border border-[#ffd24a]/60 text-[10px] font-bold tracking-[0.2em] uppercase text-[#ffd24a]">
+        NEW HIGH SCORE
+      </div>
+
+      <div class="w-full mt-6 grid grid-cols-2 gap-3 text-center">
+        <div class="p-3.5 rounded-2xl bg-[#041017]/75 border border-[#7ef9ff]/15">
+          <div class="text-[10px] uppercase tracking-[0.18em] text-[#7ef9ff]/70">Final Score</div>
+          <div id="overScore" class="font-cinzel text-2xl font-bold text-[#fff5bd] tabular-nums mt-0.5">0</div>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-[#041017]/75 border border-[#7ef9ff]/15">
+          <div class="text-[10px] uppercase tracking-[0.18em] text-[#7ef9ff]/70">Dusk Reached</div>
+          <div id="overDusk" class="font-cinzel text-lg font-bold text-[#ffd24a] mt-1">DUSK I</div>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-[#041017]/75 border border-[#7ef9ff]/15">
+          <div class="text-[10px] uppercase tracking-[0.18em] text-[#7ef9ff]/70">Lumens Gathered</div>
+          <div id="overMotes" class="font-cinzel text-lg font-bold text-[#b9f6ca] tabular-nums mt-0.5">0</div>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-[#041017]/75 border border-[#7ef9ff]/15">
+          <div class="text-[10px] uppercase tracking-[0.18em] text-[#7ef9ff]/70">Best Light</div>
+          <div id="overHighScore" class="font-cinzel text-lg font-bold text-[#ffd24a] tabular-nums mt-0.5">0</div>
+        </div>
+      </div>
+
+      <button id="btnPlayAgain" type="button"
+              class="btn-lumen mt-7 w-full py-3.5 rounded-2xl font-cinzel text-base sm:text-lg font-bold tracking-[0.22em] uppercase text-[#fff9db] cursor-pointer">
+        PLAY AGAIN
+      </button>
+    </div>
+  </div>
+
+  <!-- Modular JavaScript Files -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/hud.js"></script>
+  <script src="js/treasure.js"></script>
+  <script src="js/environment.js"></script>
+  <script src="js/vfx.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/boss.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
